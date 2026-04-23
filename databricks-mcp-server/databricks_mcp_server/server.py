@@ -170,3 +170,9 @@ from .tools import (  # noqa: F401, E402
     workspace,
     pdf,
 )
+
+# Optional: minimize tool descriptions for reduced context window usage.
+# Set DATABRICKS_MCP_TOOL_DOCS_MODE=minimal to enable.
+from .lazy_docs import setup_lazy_docs  # noqa: E402
+
+setup_lazy_docs(mcp)
