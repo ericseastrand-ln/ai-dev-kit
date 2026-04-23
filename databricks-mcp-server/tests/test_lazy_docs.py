@@ -224,11 +224,14 @@ class TestGetToolDocs:
 
 class TestSetupLazyDocs:
     def _make_mcp_server(self, tools=None):
-        """Build a mock FastMCP server with a tool registry."""
+        """Build a mock FastMCP server whose list_tools() returns the given tools."""
         server = MagicMock()
-        tool_mgr = MagicMock()
-        tool_mgr._tools = tools or {}
-        server._tool_manager = tool_mgr
+        tool_list = []
+        if tools:
+            for name, t in tools.items():
+                t.name = name
+                tool_list.append(t)
+        server.list_tools = AsyncMock(return_value=tool_list)
         server.tool = MagicMock()
         server.add_middleware = MagicMock()
         return server
@@ -298,3 +301,28 @@ class TestSetupLazyDocs:
 
         registered_fn = server.tool.call_args[0][0]
         assert registered_fn.__name__ == "get_tool_docs"
+
+    @patch.dict("os.environ", {"DATABRICKS_MCP_TOOL_DOCS_MODE": "minimal"})
+    def test_list_tools_called_with_run_middleware_false(self):
+        """Snapshot must skip middleware to capture raw descriptions."""
+        tool = MagicMock()
+        tool.description = "Docs."
+        server = self._make_mcp_server({"my_tool": tool})
+
+        setup_lazy_docs(server)
+
+        server.list_tools.assert_awaited_once_with(run_middleware=False)
+
+    @patch.dict("os.environ", {"DATABRICKS_MCP_TOOL_DOCS_MODE": "minimal"})
+    def test_list_tools_failure_returns_false(self):
+        """If list_tools raises, lazy docs is disabled rather than crashing server startup."""
+        server = MagicMock()
+        server.list_tools = AsyncMock(side_effect=RuntimeError("boom"))
+        server.tool = MagicMock()
+        server.add_middleware = MagicMock()
+
+        result = setup_lazy_docs(server)
+
+        assert result is False
+        server.tool.assert_not_called()
+        server.add_middleware.assert_not_called()

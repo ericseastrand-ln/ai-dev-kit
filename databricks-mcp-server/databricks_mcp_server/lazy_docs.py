@@ -8,6 +8,7 @@ on-demand.
 Default behavior (env var unset or "full") is unchanged.
 """
 
+import asyncio
 import logging
 import os
 from collections.abc import Sequence
@@ -108,14 +109,12 @@ def setup_lazy_docs(mcp_server) -> bool:
     if mode != "minimal":
         return False
 
-    # Snapshot tool descriptions from the internal registry
+    # Snapshot tool descriptions via the public async API. run_middleware=False
+    # skips any middleware already attached so we capture raw descriptions.
     try:
-        tools = mcp_server._tool_manager._tools
-    except AttributeError:
-        logger.error(
-            "Cannot access tool registry — FastMCP internals may have changed. "
-            "Lazy docs disabled."
-        )
+        tools = asyncio.run(mcp_server.list_tools(run_middleware=False))
+    except Exception as e:
+        logger.error("Failed to snapshot tool list for lazy docs: %s", e)
         return False
 
     if not tools:
@@ -123,8 +122,8 @@ def setup_lazy_docs(mcp_server) -> bool:
         return False
 
     full_docs = {
-        name: tool.description
-        for name, tool in tools.items()
+        tool.name: tool.description
+        for tool in tools
         if tool.description
     }
 
