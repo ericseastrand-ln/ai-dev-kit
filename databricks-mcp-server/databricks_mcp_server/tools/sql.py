@@ -62,7 +62,7 @@ def _format_results_markdown(rows: List[Dict[str, Any]]) -> str:
     return "\n".join(parts)
 
 
-@mcp.tool(timeout=60)
+@mcp.tool(timeout=60, output_schema=None)
 def execute_sql(
     sql_query: str,
     warehouse_id: str = None,
@@ -75,7 +75,12 @@ def execute_sql(
     """Execute SQL query on Databricks warehouse. Auto-selects warehouse if not provided.
 
     Use for SELECT/INSERT/UPDATE/table DDL. For catalog/schema/volume DDL, use manage_uc_objects.
-    output_format: "markdown" (default, 50% smaller) or "json"."""
+    output_format: "markdown" (default, 50% smaller) or "json".
+
+    output_schema=None on the decorator prevents FastMCP from wrapping the
+    markdown string in a {"result": "..."} structured_content envelope, which
+    most MCP clients surface to the LLM as JSON and defeats the point of the
+    markdown format."""
     rows = _execute_sql(
         sql_query=sql_query,
         warehouse_id=warehouse_id,
