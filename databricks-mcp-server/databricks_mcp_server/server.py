@@ -176,3 +176,11 @@ from .tools import (  # noqa: F401, E402
 from .lazy_docs import setup_lazy_docs  # noqa: E402
 
 setup_lazy_docs(mcp)
+
+# Optional: prune tool registry to an explicit allowlist, further reducing
+# context-window cost. Set DATABRICKS_MCP_TOOLS_ALLOWED=comma,separated,names
+# to enable. Must run AFTER setup_lazy_docs so get_tool_docs catalog is
+# built from the full tool set before pruning.
+from .tool_filter import apply_tool_allowlist  # noqa: E402
+
+apply_tool_allowlist(mcp)
