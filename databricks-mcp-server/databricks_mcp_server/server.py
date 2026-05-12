@@ -184,3 +184,12 @@ setup_lazy_docs(mcp)
 from .tool_filter import apply_tool_allowlist  # noqa: E402
 
 apply_tool_allowlist(mcp)
+
+# Optional: strip advertised inputSchema to an empty object schema for every
+# tool (except get_tool_docs). Set DATABRICKS_MCP_SCHEMA_MODE=minimal to
+# enable. The model fetches per-tool signatures on demand via get_tool_docs.
+# Must run AFTER setup_lazy_docs so get_tool_docs is registered before the
+# middleware filters the tool list.
+from .ultra_minimal import setup_minimal_schema  # noqa: E402
+
+setup_minimal_schema(mcp)
